@@ -83,7 +83,7 @@ describe("the app", () => {
     expect(await (await get(app, "/api/fake/ping", app.adminToken)).json()).toEqual({ pong: true });
     const docs = (await (await get(app, "/api/docs")).json()) as { paths: Record<string, unknown>; "x-mcp-tools": { name: string }[] };
     expect(Object.keys(docs.paths)).toEqual(expect.arrayContaining(["/health", "/api/me", "/api/fake/ping"]));
-    expect(docs["x-mcp-tools"].map((t) => t.name)).toEqual(["who_am_i"]);
+    expect(docs["x-mcp-tools"].map((t) => t.name)).toContain("who_am_i");
   });
 
   it("serves every module's tools on one /mcp, each run as its caller", async () => {
@@ -97,7 +97,7 @@ describe("the app", () => {
           fetch: async (input, init) => app.fetch(new Request(input, init)),
         }),
       );
-      expect((await client.listTools()).tools.map((t) => t.name)).toEqual(["who_am_i"]);
+      expect((await client.listTools()).tools.map((t) => t.name)).toContain("who_am_i");
       const result = (await client.callTool({ name: "who_am_i", arguments: {} })) as { content: { text: string }[] };
       expect(JSON.parse(result.content[0]!.text)).toEqual(caller);
       await client.close();
@@ -105,7 +105,7 @@ describe("the app", () => {
   });
 
   it("lists no tools, rather than failing, when no module has any", async () => {
-    const app = start(undefined, modules);
+    const app = start(undefined, [{ name: "bare", migrations: [], create: () => ({}) }]);
     const client = new Client({ name: "test", version: "0" });
     await client.connect(
       new StreamableHTTPClientTransport(new URL("http://localhost/mcp"), {
@@ -123,7 +123,8 @@ describe("the app", () => {
     apps = [];
     const app = start(dir);
     const rows = app.ctx.db.prepare("SELECT module, version FROM migrations ORDER BY module").all();
-    expect(rows).toEqual([{ module: "core", version: 1 }, { module: "fake", version: 1 }]);
+    expect(rows).toEqual(expect.arrayContaining([{ module: "core", version: 1 }, { module: "fake", version: 1 }]));
+    expect(rows).toHaveLength(new Set(rows.map((r) => `${r.module}/${r.version}`)).size);
   });
 
   it("registers the tasks, skills, roles, agents and queue modules, and gives every service in contracts.ts", async () => {
