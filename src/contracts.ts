@@ -136,16 +136,41 @@ export interface Roles {
 
 // ---------------------------------------------------------------- Agents
 
-export type AgentStatus = "starting" | "working" | "waiting" | "review" | "done" | "stopped";
+/**
+ * `working` while a turn of its runs (or it said so), `waiting` once it needs
+ * the person (said, or a turn ended with nothing said), `review` and `done` as
+ * it said them, and `idle` with no live session and nothing of those said.
+ */
+export type AgentStatus = "working" | "idle" | "waiting" | "review" | "done";
+
+/** What an agent may say of itself with `set_status`. */
+export type SaidStatus = "working" | "waiting" | "review" | "done";
 
 export interface Agent {
   id: string;
+  /** Unique: `^[a-z0-9][a-z0-9-]{0,39}$`. Its folder is `<dir>/agents/<name>/`. */
   name: string;
   role: string | null;
   /** The task id it was started on, or null. */
   task: string | null;
+  brief: string;
+  /** 1 Haiku, 2 Sonnet, 3 Opus. */
+  capability: Capability;
   status: AgentStatus;
+  /** What it last said with its status, in a few words; null until it says. */
+  headline: string | null;
+  /** What it is there to do, set once by itself (or by the person). */
+  title: string | null;
+  /** True while a session of its runs. */
+  live: boolean;
+  /** True while it waits for room under the limit to start a session. */
+  queued: boolean;
+  /** When the usage limit that stopped its session resets, while it waits for it; null otherwise. */
+  limitedUntil: string | null;
+  /** When it was closed; a message reopens it. Null while open. */
+  closedAt: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface NewAgent {
@@ -153,20 +178,31 @@ export interface NewAgent {
   role?: string;
   task?: string;
   brief: string;
+  /** Absent, the role's, or 3. */
+  capability?: Capability;
 }
+
+/** `stopped` by a stop, close or delete; `done` once it ended a turn in `done` or `review`; `ended` by itself; `failed`; `limit` by a usage limit; `shutdown` when the app stopped. */
+export type SessionEndReason = "stopped" | "done" | "ended" | "failed" | "limit" | "shutdown";
 
 export type AgentEvent =
   | { type: "status"; agentId: string; status: AgentStatus }
-  | { type: "ended"; agentId: string; reason: string };
+  | { type: "ended"; agentId: string; reason: SessionEndReason };
 
 export interface Agents {
-  create(agent: NewAgent): Promise<Agent>;
+  /** Makes the agent and asks for its first session, which starts once there is room under the limit. On a task, it becomes the assignee and moves it `in_progress`, as `by` (default the person). */
+  create(agent: NewAgent, by?: Caller): Promise<Agent>;
+  /** By id or name. */
   get(id: string): Promise<Agent | undefined>;
   list(): Promise<Agent[]>;
-  /** Delivers a message as the agent's next turn. */
+  /** Delivers a message as the agent's next turn, starting a session that carries on its conversation when none is live. */
   send(id: string, text: string, by: Caller): Promise<void>;
-  /** Ends its session; its status becomes `stopped`. */
+  /** Ends its live session, if any, and any waiting to start; the agent stays. */
   stop(id: string): Promise<void>;
+  /** Stops it and marks it closed; a message reopens it. */
+  close(id: string): Promise<void>;
+  /** Stops it and removes it, its tokens, transcript and folder. */
+  delete(id: string): Promise<void>;
   /** Calls `listener` on every status change and session end; returns the unsubscribe. */
   onEvent(listener: (event: AgentEvent) => void): () => void;
 }
