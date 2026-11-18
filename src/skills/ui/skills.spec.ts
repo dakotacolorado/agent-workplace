@@ -5,6 +5,7 @@ import { Window } from "happy-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp, type App } from "../../app.ts";
 import { modules } from "../../modules.ts";
+import { createRoles } from "../../roles/index.ts";
 import { pages } from "../../ui/pages.ts";
 import { shell, TOKEN_KEY } from "../../ui/shell.ts";
 import { createSkills } from "../index.ts";
@@ -57,7 +58,7 @@ const click = (sel: string) => (document.querySelector(sel) as HTMLElement).clic
 
 beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "awp-skills-ui-"));
-  app = createApp({ dir, modules: modules.map((m) => (m.name === "skills" ? createSkills({ judge: new FakeJudge(), log: () => {} }) : m)) });
+  app = createApp({ dir, modules: modules.map((m) => (m.name === "skills" ? createSkills({ judge: new FakeJudge(), log: () => {} }) : m.name === "roles" ? createRoles({ defaults: [] }) : m)) });
   localStorage.setItem(TOKEN_KEY, app.adminToken);
   await api("PUT", "/api/skills/team%2Fdeploys", { write: [{ path: "SKILL.md", content: md(LINE) }] });
 });
