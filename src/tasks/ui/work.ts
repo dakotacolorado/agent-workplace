@@ -15,6 +15,7 @@ export async function renderWork(into: HTMLElement, api: Api): Promise<void> {
 
   const statusSel = h("select", { "aria-label": "Status", onchange: () => ((filters.status = statusSel.value), draw()) }, ...STATUSES.map((s) => h("option", { value: s, textContent: s === "open" ? "any open status" : s.replace("_", " ") })));
   const labelSel = h("select", { "aria-label": "Label", onchange: () => ((filters.label = labelSel.value), draw()) });
+  const filtersBox = h("div", { class: "filters" }, statusSel, labelSel);
   const drawLabels = () => {
     labelSel.replaceChildren(h("option", { value: "", textContent: "any label" }), ...snap.labels.map((l) => h("option", { value: l.id, textContent: l.name })));
     labelSel.value = filters.label;
@@ -53,10 +54,18 @@ export async function renderWork(into: HTMLElement, api: Api): Promise<void> {
   };
 
   const draw = () => {
+    const open = snap.tasks.filter(isOpen);
+    // With no open tasks at all there is nothing to filter: say how to get some instead.
+    filtersBox.hidden = open.length === 0;
+    if (!open.length) {
+      list.replaceChildren(h("p", { class: "muted empty" }, "No tasks yet. Go to ", h("a", { href: "/workers" }, "Workers"), ", start a planner and tell it what you want built; its tasks show up here."));
+      return;
+    }
     const qp = places(snap.entries);
-    const shown = snap.tasks.filter(isOpen).filter((t) => (filters.status === "open" || t.status === filters.status) && (!filters.label || t.labels.includes(filters.label)));
+    const shown = open.filter((t) => (filters.status === "open" || t.status === filters.status) && (!filters.label || t.labels.includes(filters.label)));
     list.replaceChildren(
       h("p", { class: "muted count" }, `${shown.length} open task${shown.length === 1 ? "" : "s"}`),
+      h("p", { class: "muted hint" }, "Start runs an agent on a task now. Queue starts one when the task is ready and there is room."),
       ...(shown.length ? shown.map((t) => row(t, snap, qp)) : [h("p", { class: "muted" }, "No open tasks match.")]),
     );
   };
@@ -71,7 +80,7 @@ export async function renderWork(into: HTMLElement, api: Api): Promise<void> {
     }, () => formBox.replaceChildren()));
   } });
 
-  into.replaceChildren(h("div", { class: "head" }, h("h1", {}, "Work"), toggle), formBox, h("div", { class: "filters" }, statusSel, labelSel), list);
+  into.replaceChildren(h("div", { class: "head" }, h("h1", {}, "Work"), toggle), formBox, filtersBox, list);
   drawLabels();
   draw();
 }

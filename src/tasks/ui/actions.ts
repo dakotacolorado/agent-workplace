@@ -6,10 +6,11 @@ import { h } from "./dom.ts";
 export function actions(api: Api, task: Task, queued: boolean, refresh: () => Promise<void>): HTMLElement {
   const box = h("div", { class: "actions" });
   const say = h("span", { class: "say", role: "status" });
-  const run = (label: string, fn: () => Promise<Outcome>) =>
+  const run = (label: string, title: string, fn: () => Promise<Outcome>) =>
     h("button", {
       type: "button",
       textContent: label,
+      title,
       onclick: async (ev: Event) => {
         const btn = ev.currentTarget as HTMLButtonElement;
         btn.disabled = true;
@@ -26,8 +27,8 @@ export function actions(api: Api, task: Task, queued: boolean, refresh: () => Pr
       },
     });
   if (isOpen(task)) {
-    box.append(run("Start", () => start(api, task.id)));
-    box.append(queued ? run("Dequeue", () => dequeue(api, task.id)) : run("Queue", () => enqueue(api, task.id)));
+    box.append(run("Start", "Start an agent on it now", () => start(api, task.id)));
+    box.append(queued ? run("Dequeue", "Take it out of the queue", () => dequeue(api, task.id)) : run("Queue", "Start an agent when it is ready and there is room", () => enqueue(api, task.id)));
   }
   box.append(say);
   return box;
