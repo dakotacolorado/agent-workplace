@@ -7,7 +7,7 @@ const GOOD = "awp_good";
 const fakeFetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
   const auth = new Headers(init?.headers).get("Authorization");
   return auth === `Bearer ${GOOD}`
-    ? new Response(JSON.stringify({ kind: "person" }), { status: 200 })
+    ? new Response(JSON.stringify({ kind: "person", tasks: [], labels: [], entries: [], comments: [], task: { title: "Task 1234", id: "1234", shortId: "1234", description: "", status: "backlog", dependsOn: [], blockedBy: [], subtasks: [], criteria: [], labels: [], assignee: null, ready: true } }), { status: 200 })
     : new Response(JSON.stringify({ error: "no" }), { status: 401 });
 }) as typeof fetch;
 
