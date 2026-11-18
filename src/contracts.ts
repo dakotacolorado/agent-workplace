@@ -45,6 +45,9 @@ export interface TaskComment {
   createdAt: string;
 }
 
+/** Emitted once when a task moves into a closed status, so the queue can start what it freed. */
+export type TaskEvent = { type: "closed"; taskId: string; status: "done" | "cancelled" };
+
 export interface Tasks {
   /** One task by id or short id, or undefined. */
   get(id: string): Promise<Task | undefined>;
@@ -53,6 +56,8 @@ export interface Tasks {
   /** Sets status and/or assignee; refuses a move the task's rules forbid (throws). */
   update(id: string, change: { status?: TaskStatus; assignee?: string | null }, by: Caller): Promise<Task>;
   comment(id: string, body: string, by: Caller): Promise<TaskComment>;
+  /** Calls `listener` when a task closes (done or cancelled); returns the unsubscribe. */
+  onEvent(listener: (event: TaskEvent) => void): () => void;
 }
 
 // ---------------------------------------------------------------- Skills
