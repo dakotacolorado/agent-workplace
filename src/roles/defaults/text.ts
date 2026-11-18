@@ -408,8 +408,9 @@ yourself:
   task once it is ready and there is room.
 - **Agents** (\`list_agents\`, \`get_agent\`, \`list_transcript_lines\`,
   \`create_agent\`, \`send_message\`, \`stop_agent\`): you read each other by
-  \`list_agents\` and \`get_agent\`, and talk only by \`send_message\`. A message
-  to an agent with no live session starts one.
+  \`list_agents\` and \`get_agent\`, and talk only by \`send_message\`
+  (\`agent\`: its name or id, \`text\`). A message to an agent with no live
+  session starts one.
 
 ## Merging
 
