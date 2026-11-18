@@ -1,0 +1,43 @@
+{
+  "name": "agent-workplace",
+  "version": "0.1.0",
+  "description": "One app on one machine: tasks, a queue, agents working in roles, and skills that sharpen from agents' feedback.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dakotacolorado/agent-workplace.git"
+  },
+  "license": "MIT",
+  "author": "Dakota Parker",
+  "type": "module",
+  "bin": {
+    "agent-workplace": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node dist/cli.js",
+    "dev": "vite build && node src/cli.ts",
+    "build": "rm -rf dist && vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ui.json",
+    "test": "vitest run",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.9",
+    "@hono/zod-openapi": "1.6.3",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "hono": "4.13.19",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "happy-dom": "21.0.4",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  }
+}
