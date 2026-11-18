@@ -42,10 +42,42 @@ export async function shell(doc: Document, options: ShellOptions): Promise<void>
   const signedIn = token ? await api.get("/api/me").then(() => true, () => false) : false;
   if (!signedIn) {
     win.localStorage.removeItem(TOKEN_KEY);
-    main.append(
-      el("h1", { textContent: "Sign in" }),
-      el("p", { textContent: "Open the sign-in link agent-workplace printed when it started (it ends #signin=…)." }),
+    const hint = el("p");
+    hint.append(
+      "Lost the link? Run ",
+      el("code", { textContent: "scripts/setup.sh" }),
+      " again (or the one-line setup from the README) and it prints the link again. Or paste the token from ",
+      el("code", { textContent: "~/.agent-workplace/admin-token" }),
+      " (or ",
+      el("code", { textContent: "$AGENT_WORKPLACE_DIR/admin-token" }),
+      ") below.",
     );
+    const field = doc.createElement("input");
+    Object.assign(field, { type: "password", name: "token", required: true, autocomplete: "off" });
+    const refused = el("p", { className: "error" });
+    refused.setAttribute("role", "alert");
+    const label = doc.createElement("label");
+    label.append("Admin token ", field);
+    const form = el("form");
+    form.append(label, refused, el("button", { type: "submit", textContent: "Sign in" }));
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const pasted = field.value.trim();
+      const accepted =
+        pasted !== "" &&
+        (await options.fetch("/api/me", { headers: { Authorization: `Bearer ${pasted}` } }).then(
+          (res) => res.ok,
+          () => false,
+        ));
+      if (!accepted) {
+        refused.textContent = "That token was not accepted.";
+        field.select();
+        return;
+      }
+      win.localStorage.setItem(TOKEN_KEY, pasted);
+      win.location.reload();
+    });
+    main.append(el("h1", { textContent: "Sign in" }), el("p", { textContent: "Open the sign-in link agent-workplace printed when it started (it ends #signin=…)." }), hint, form);
     return;
   }
 

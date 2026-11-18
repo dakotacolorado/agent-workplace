@@ -45,4 +45,35 @@ describe("the page shell", () => {
     expect(document.querySelector("main h1")?.textContent).toBe("Sign in");
     expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
   });
+
+  it("tells someone without the link to run setup.sh and names the admin-token file", async () => {
+    await shell(document, { fetch: fakeFetch, pages });
+    const text = document.querySelector("main")?.textContent ?? "";
+    expect(text).toContain("scripts/setup.sh");
+    expect(text).toContain("admin-token");
+    expect(document.querySelector("main input[type=password]")).not.toBeNull();
+  });
+
+  it("signs in when the pasted admin token is accepted", async () => {
+    await shell(document, { fetch: fakeFetch, pages });
+    const field = document.querySelector<HTMLInputElement>("main input[type=password]")!;
+    field.value = GOOD;
+    document.querySelector("main form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    await settle();
+    expect(localStorage.getItem(TOKEN_KEY)).toBe(GOOD);
+  });
+
+  it("shows 'That token was not accepted.' and stays on the sign-in page for a wrong token", async () => {
+    await shell(document, { fetch: fakeFetch, pages });
+    const field = document.querySelector<HTMLInputElement>("main input[type=password]")!;
+    field.value = "nope";
+    document.querySelector("main form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    await settle();
+    expect(document.querySelector("main [role=alert]")?.textContent).toBe("That token was not accepted.");
+    expect(document.querySelector("main h1")?.textContent).toBe("Sign in");
+    expect(navOf()).toEqual([]);
+    expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
 });
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
