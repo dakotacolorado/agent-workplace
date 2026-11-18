@@ -54,7 +54,8 @@ async function listPage(into: HTMLElement, api: Api): Promise<void> {
   const head = make(doc, "div", "bar");
   const newBtn = make(doc, "button", "", "New agent");
   head.append(make(doc, "h1", "", "Workers"), newBtn);
-  const form = newAgentForm(doc, api);
+  let names: string[] = [];
+  const { form, sync } = newAgentForm(doc, api, () => names);
   form.hidden = true;
   newBtn.onclick = () => (form.hidden = !form.hidden);
   const open = make(doc, "div", "cards");
@@ -64,11 +65,18 @@ async function listPage(into: HTMLElement, api: Api): Promise<void> {
   const error = make(doc, "p", "error");
   into.append(head, form, error, open, closed);
 
+  let shown = false;
   const refresh = async () => {
     try {
       const { agents } = await api.get<{ agents: Agent[] }>("/api/agents");
       const all = await Promise.all(agents.map((a) => api.get<Detail>(`/api/agents/${a.id}`).catch(() => ({ ...a, costUsd: 0 }))));
       all.sort(byStatus);
+      names = all.map((a) => a.name);
+      if (!shown) {
+        shown = true;
+        form.hidden = !!all.length;
+      }
+      sync();
       const isOpen = (a: Agent) => !a.closedAt;
       open.replaceChildren(...all.filter(isOpen).map((a) => card(doc, a)));
       if (!open.children.length) open.append(make(doc, "p", "muted", "No open agents."));
@@ -94,14 +102,29 @@ async function listPage(into: HTMLElement, api: Api): Promise<void> {
   );
 }
 
-function newAgentForm(doc: Document, api: Api): HTMLFormElement {
+const NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const NAME_HELP = "Use lowercase letters, digits and hyphens (up to 40).";
+
+/** The new-agent form, and a function to call when the listed agents change. */
+function newAgentForm(doc: Document, api: Api, taken: () => string[]): { form: HTMLFormElement; sync: () => void } {
   const form = make(doc, "form", "new");
   const field = (label: string, input: HTMLElement) => {
     const l = make(doc, "label");
     l.append(make(doc, "span", "muted", label), input);
     return l;
   };
-  const name = Object.assign(make(doc, "input"), { required: true, pattern: "[a-z0-9][a-z0-9\\-]{0,39}", placeholder: "lowercase-name" });
+  const name = Object.assign(make(doc, "input"), { title: NAME_HELP, placeholder: "agent-1" });
+  const autoName = () => {
+    const base = role.value || "agent";
+    const used = new Set(taken());
+    let n = 1;
+    while (used.has(`${base}-${n}`)) n++;
+    return `${base}-${n}`;
+  };
+  const sync = () => {
+    name.placeholder = `${autoName()} (filled in if left blank)`;
+  };
+  name.oninput = () => name.setCustomValidity(!name.value || NAME_PATTERN.test(name.value) ? "" : NAME_HELP);
   // The role is chosen from the roles the app lists; where it lists none, it is typed.
   const roleBox = make(doc, "span", "role");
   let role = Object.assign(make(doc, "input"), { placeholder: "role (optional)" }) as HTMLInputElement | HTMLSelectElement;
@@ -114,10 +137,13 @@ function newAgentForm(doc: Document, api: Api): HTMLFormElement {
       select.append(Object.assign(make(doc, "option"), { value: "", textContent: "No role" }), ...list.map((x) => Object.assign(make(doc, "option"), { value: x.name, textContent: x.name })));
       roleBox.replaceChildren(select);
       role = select;
+      if (list.some((x) => x.name === "planner")) select.value = "planner";
+      select.onchange = sync;
+      sync();
     },
     () => {},
   );
-  const brief = Object.assign(make(doc, "textarea"), { required: true, rows: 4, placeholder: "What it is to do" });
+  const brief = Object.assign(make(doc, "textarea"), { required: true, rows: 4, placeholder: "Add a dark mode toggle to owner/repo's settings page. Name the repo." });
   const cap = make(doc, "select");
   cap.append(
     Object.assign(make(doc, "option"), { value: "", textContent: "Role's default" }),
@@ -125,22 +151,24 @@ function newAgentForm(doc: Document, api: Api): HTMLFormElement {
   );
   const error = make(doc, "p", "error");
   const submit = Object.assign(make(doc, "button", "", "Start agent"), { type: "submit" });
-  form.append(field("Name", name), field("Role", roleBox), field("Brief", brief), field("Capability", cap), error, submit);
+  form.append(field("Name", name), field("Role", roleBox), field("What do you want done?", brief), field("Capability", cap), error, submit);
   form.onsubmit = async (e) => {
     e.preventDefault();
     submit.disabled = true;
     try {
-      const body: Record<string, unknown> = { name: name.value, brief: brief.value };
+      const body: Record<string, unknown> = { name: name.value || autoName(), brief: brief.value };
       if (role.value) body.role = role.value;
       if (cap.value) body.capability = Number(cap.value);
       const made = await api.send<Agent>("POST", "/api/agents", body);
+      form.hidden = true;
       go(`/workers/${made.name}`);
     } catch (err) {
       error.textContent = message(err);
       submit.disabled = false;
     }
   };
-  return form;
+  sync();
+  return { form, sync };
 }
 
 /** Draws transcript lines: messages and replies as markdown, runs of tool calls folded. */

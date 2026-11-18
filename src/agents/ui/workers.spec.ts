@@ -9,11 +9,14 @@ const agent = (name: string, status: string, extra: Record<string, unknown> = {}
   live: false, queued: false, limitedUntil: null, closedAt: null, createdAt: `2026-01-0${name.length}`, updatedAt: "", costUsd: 1.5, ...extra,
 });
 
-function fakeApi(agents: ReturnType<typeof agent>[], calls: [string, string, unknown][] = [], failTask = false): Api {
+function fakeApi(agents: ReturnType<typeof agent>[], calls: [string, string, unknown][] = [], failTask = false, roles: string[] | null = null): Api {
   return {
     async get(path: string) {
       if (path === "/api/agents") return { agents } as never;
-      if (path === "/api/roles") throw new Error("no roles");
+      if (path === "/api/roles") {
+        if (!roles) throw new Error("no roles");
+        return { roles: roles.map((name) => ({ name })) } as never;
+      }
       const a = agents.find((x) => path.endsWith(`/${x.id}`) || path.endsWith(`/${x.name}`));
       if (!a) throw new Error("no such agent");
       return a as never;
@@ -68,6 +71,40 @@ describe("Workers page", () => {
     into.querySelector("form.new")!.dispatchEvent(new Event("submit", { cancelable: true }));
     await tick();
     expect(calls).toEqual([["POST", "/api/agents", { name: "helper", brief: "do it" }]]);
+  });
+
+  it("toggles the form with New agent, open only when there are no agents", async () => {
+    const empty = await render("/workers", {}, fakeApi([]));
+    const form = empty.querySelector("form.new") as HTMLFormElement;
+    expect(form.hidden).toBe(false);
+    (empty.querySelector(".bar button") as HTMLButtonElement).click();
+    expect(form.hidden).toBe(true);
+    (empty.querySelector(".bar button") as HTMLButtonElement).click();
+    expect(form.hidden).toBe(false);
+    const some = await render("/workers", {}, fakeApi([agent("a", "working")]));
+    expect((some.querySelector("form.new") as HTMLFormElement).hidden).toBe(true);
+  });
+
+  it("defaults the role to planner, names a blank name <role>-<n>, and explains a bad name", async () => {
+    const calls: [string, string, unknown][] = [];
+    const into = await render("/workers", {}, fakeApi([agent("planner-1", "working")], calls, false, ["implementer", "planner"]));
+    await tick();
+    const select = into.querySelector("form.new select") as HTMLSelectElement;
+    expect(select.value).toBe("planner");
+    const name = into.querySelector("form.new input") as HTMLInputElement;
+    expect(name.placeholder).toContain("planner-2");
+    expect(into.querySelector("form.new label span")!.textContent).toBe("Name");
+    expect(into.querySelector("form.new textarea")!.closest("label")!.textContent).toContain("What do you want done?");
+    expect((into.querySelector("form.new textarea") as HTMLTextAreaElement).placeholder).toContain("owner/repo");
+    name.value = "My Planner";
+    name.dispatchEvent(new Event("input"));
+    expect(name.validationMessage).toContain("lowercase letters, digits and hyphens");
+    name.value = "";
+    name.dispatchEvent(new Event("input"));
+    (into.querySelector("form.new textarea") as HTMLTextAreaElement).value = "do it";
+    into.querySelector("form.new")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    await tick();
+    expect(calls).toEqual([["POST", "/api/agents", { name: "planner-2", brief: "do it", role: "planner" }]]);
   });
 
   it("sends a message, stops, and closes the task before the agent", async () => {
