@@ -29,7 +29,7 @@ export function createRoles(opts: { log?: (line: string) => void; defaults?: Sta
         (seeding ??= skills()
           .seed(defaults)
           .then((added) => {
-            if (added.length) log(`seeded ${added.join(", ")}`);
+            if (added.length && process.env.AGENT_WORKPLACE_DEBUG) log(`seeded ${added.join(", ")}`);
           })
           .catch((e) => log(`seeding the default roles failed: ${(e as Error).message}`)));
       queueMicrotask(() => void seeded());
