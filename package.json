@@ -1,7 +1,7 @@
 {
   "name": "agent-workplace",
   "version": "0.1.0",
-  "description": "One app on one machine: tasks, a queue, agents working in roles, and skills that sharpen from agents' feedback.",
+  "description": "Tell a team of Claude Code agents on your computer what you want built: they plan it into tasks, write the code and merge the pull requests in your GitHub repos, and you watch and steer them from a web page.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dakotacolorado/agent-workplace.git"
