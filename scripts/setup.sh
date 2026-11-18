@@ -10,6 +10,30 @@ set -euo pipefail
 say() { printf '%s\n' "$*"; }
 die() { printf 'setup: %s\n' "$*" >&2; exit 1; }
 
+# npm's audit, funding and update notices are for the builder, not for someone setting up.
+export npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false npm_config_loglevel=error
+
+# Runs a command with its output kept out of sight; shows the output and stops if it fails.
+quiet() {
+  local what=$1 out
+  shift
+  out=$(mktemp)
+  if ! "$@" >"$out" 2>&1; then
+    cat "$out" >&2
+    rm -f "$out"
+    die "$what failed; its output is above. Fix it and run this again."
+  fi
+  rm -f "$out"
+}
+
+# The sign-in block; src/cli.ts prints the same text when the app starts.
+sign_in_block() {
+  say ""
+  say "agent-workplace is running. Open this link to sign in:"
+  say "$1"
+  say "Keep this terminal open; Ctrl-C stops it. Run scripts/setup.sh again any time to get the link back."
+}
+
 # Asks a yes/no question on the terminal, even when this script is piped in.
 confirm() {
   [ "${AGENT_WORKPLACE_YES:-}" = 1 ] && return 0
@@ -64,8 +88,7 @@ port=${AGENT_WORKPLACE_PORT:-4747}
 # An app already answering on the port is reused, not started twice.
 if curl -fsS "http://localhost:$port/health" >/dev/null 2>&1; then
   if [ -r "$dir/admin-token" ]; then
-    say "agent-workplace is already running. Open it signed in:"
-    say "http://localhost:$port/#signin=$(cat "$dir/admin-token")"
+    sign_in_block "http://localhost:$port/#signin=$(cat "$dir/admin-token")"
     exit 0
   fi
   die "something answers on port $port but it is not agent-workplace's data in $dir. Set AGENT_WORKPLACE_PORT to a free port."
@@ -76,7 +99,7 @@ here=
 if [ -f "${BASH_SOURCE[0]:-}" ]; then here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd); fi
 if [ -n "$here" ] && [ -f "$here/../package.json" ] && grep -q '"name": "agent-workplace"' "$here/../package.json"; then
   cd "$here/.."
-  [ -f dist/cli.js ] || npm ci
+  [ -f dist/cli.js ] || quiet "npm ci" npm ci --no-audit --no-fund --loglevel=error
   say "Starting agent-workplace (Ctrl-C stops it)."
   exec node dist/cli.js
 fi

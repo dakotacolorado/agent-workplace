@@ -13,7 +13,11 @@ const publicDir = fileURLToPath(new URL(import.meta.url.endsWith(".ts") ? "../di
 const app = createApp({ dir, modules, publicDir });
 const server = serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, (info) => {
   console.log(`agent-workplace is running, its data in ${dir}`);
-  console.log(`Open it signed in: http://localhost:${info.port}/#signin=${app.adminToken}`);
+  console.log("");
+  console.log("agent-workplace is running. Open this link to sign in:");
+  console.log(`http://localhost:${info.port}/#signin=${app.adminToken}`);
+  // Mirrors the sign-in block scripts/setup.sh prints when the app is already running.
+  console.log("Keep this terminal open; Ctrl-C stops it. Run scripts/setup.sh again any time to get the link back.");
 });
 server.on("error", (err) => {
   console.error(`agent-workplace could not start: ${err.message}`);
