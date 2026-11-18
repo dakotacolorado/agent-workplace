@@ -135,8 +135,9 @@ describe("roles", () => {
         expect("invalid" in read ? read.invalid : "valid").toBe("valid");
         for (const s of r.skills) expect(await app.ctx.services.skills.get(s), s).toBeDefined();
       }
-      expect(listed.find((r) => r.name === "planner")!.skills).toEqual(["roles/planner", "workplace/rules", "workplace/tasks-to-merge", "workplace/readme-writing"]);
+      expect(listed.find((r) => r.name === "planner")!.skills).toEqual(["roles/planner", "workplace/rules", "workplace/tasks-to-merge"]);
       expect(listed.find((r) => r.name === "project-manager")!.skills).toEqual(["roles/project-manager", "workplace/rules", "workplace/tasks-to-merge"]);
+      expect(listed.find((r) => r.name === "implementer")!.skills).toEqual(["roles/implementer", "workplace/rules", "workplace/tasks-to-merge"]);
       expect(logs.join("\n")).not.toMatch(/left out/);
       await c.close();
     });
@@ -156,7 +157,7 @@ describe("roles", () => {
     });
 
     it("names no machine, stage, release job, outside service or person", () => {
-      expect(DEFAULT_SKILLS.map((s) => s.name).sort()).toEqual(["roles/implementer", "roles/planner", "roles/project-manager", "workplace/readme-writing", "workplace/rules", "workplace/tasks-to-merge"]);
+      expect(DEFAULT_SKILLS.map((s) => s.name).sort()).toEqual(["roles/implementer", "roles/planner", "roles/project-manager", "workplace/rules", "workplace/tasks-to-merge"]);
       for (const s of DEFAULT_SKILLS)
         for (const f of s.files) for (const word of FORBIDDEN) expect(word.test(f.content), `${s.name}/${f.path} matches ${word}`).toBe(false);
     });

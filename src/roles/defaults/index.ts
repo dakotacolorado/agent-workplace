@@ -1,11 +1,10 @@
 import type { StarterSkill } from "../../contracts.ts";
 import { PREFIX, ROLE_FILE, SKILL_FILE, bodyOf, skillMd, type RoleSettings } from "../domain.ts";
-import { implementerRole, plannerRole, projectManagerRole, readmeWriting, rules, tasksToMerge } from "./text.ts";
+import { implementerRole, plannerRole, projectManagerRole, rules, tasksToMerge } from "./text.ts";
 
 /** The skills every role below shares, after its own. */
 export const RULES = "workplace/rules";
 export const TASKS_TO_MERGE = "workplace/tasks-to-merge";
-export const README_WRITING = "workplace/readme-writing";
 
 const roles: { name: string; text: string; settings: RoleSettings }[] = [
   {
@@ -13,7 +12,7 @@ const roles: { name: string; text: string; settings: RoleSettings }[] = [
     text: plannerRole,
     settings: {
       summary: "Turns what the person wants done into tasks with acceptance criteria, verification, dependencies and difficulty, and starts a project manager on them. Started by the person when there is new work to plan.",
-      skills: [RULES, TASKS_TO_MERGE, README_WRITING],
+      skills: [RULES, TASKS_TO_MERGE],
       priority: 40,
       capability: 3,
       brief:
@@ -39,7 +38,7 @@ const roles: { name: string; text: string; settings: RoleSettings }[] = [
     text: implementerRole,
     settings: {
       summary: "Does one task: makes the change, runs the repo's own checks, merges its own PR once they pass, and closes the task once every criterion is met. Started on a task by the queue, a project manager or the person.",
-      skills: [RULES, TASKS_TO_MERGE, README_WRITING],
+      skills: [RULES, TASKS_TO_MERGE],
       priority: 10,
       capability: 2,
       brief: null,
@@ -61,5 +60,4 @@ export const DEFAULT_SKILLS: StarterSkill[] = [
   })),
   { name: RULES, files: [{ path: SKILL_FILE, content: rules }] },
   { name: TASKS_TO_MERGE, files: [{ path: SKILL_FILE, content: tasksToMerge }] },
-  { name: README_WRITING, files: [{ path: SKILL_FILE, content: readmeWriting }] },
 ];
