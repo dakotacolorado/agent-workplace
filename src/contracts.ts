@@ -125,12 +125,12 @@ export interface Role {
   /** Higher runs first when the queue has more ready work than room. */
   priority: number;
   capability: Capability;
-  /** The first message an agent of this role is started with unless it is given its own, or null. */
-  brief: string | null;
-  /** What happens to an agent's session when its task is done: it stops, or is kept for more. */
-  whenDone: "stop" | "keep";
-  /** What the agent is told first: the body of the role's `SKILL.md`. */
-  instructions: string;
+  /** The first message an agent of this role is started with unless it is given its own; empty for none. */
+  brief: string;
+  /** What happens to an agent's session when its task is done: it stops, or is kept for more. The roles module always sets it. */
+  whenDone?: "stop" | "keep";
+  /** What the agent is told first: the body of the role's `SKILL.md`. The roles module always sets it. */
+  instructions?: string;
 }
 
 export interface Roles {

@@ -72,7 +72,7 @@ export function createRoles(opts: { log?: (line: string) => void } = {}): Module
         const found = await read(name);
         if (!found) throw new RoleRefusal(`no valid role is named ${name}`, 404);
         const settings = RoleSettingsSchema.parse({ ...found.settings, ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined)) });
-        const text = body ?? found.role.instructions;
+        const text = body ?? found.role.instructions ?? "";
         await write(name, [{ path: SKILL_FILE, content: skillMd(name, settings.summary, text) }, settingsFile(settings)], caller, `Updated role ${name}`);
         return view((await read(name))!.role);
       };

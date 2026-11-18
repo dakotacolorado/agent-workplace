@@ -58,7 +58,7 @@ describe("roles", () => {
     expect((await text(app, "roles/builder")).version).toBe(v + 2);
 
     const role = await app.ctx.services.roles.get("builder");
-    expect(role).toEqual({ name: "builder", description: "Builds things.", skills: ["roles/builder", "team/style"], priority: 10, capability: 3, brief: null, whenDone: "keep", instructions: "Build it well." });
+    expect(role).toEqual({ name: "builder", description: "Builds things.", skills: ["roles/builder", "team/style"], priority: 10, capability: 3, brief: "", whenDone: "keep", instructions: "Build it well." });
     expect((await c.call("create_role", { name: "builder", summary: "x", body: "y" })).error).toBe(true);
     expect((await c.call("create_role", { name: "Bad Name", summary: "x", body: "y" })).error).toBe(true);
     expect((await c.call("update_role", { name: "nobody", priority: 1 })).error).toBe(true);

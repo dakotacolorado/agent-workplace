@@ -71,7 +71,7 @@ export function readRole(skill: Skill): { role: Role; settings: RoleSettings } |
     skills: [skill.name, ...s.skills.filter((x) => x !== skill.name)],
     priority: s.priority,
     capability: s.capability as Capability,
-    brief: s.brief,
+    brief: s.brief ?? "",
     whenDone: s.whenDone,
     instructions: bodyOf(md.content),
   };
