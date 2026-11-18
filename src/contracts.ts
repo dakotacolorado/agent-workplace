@@ -120,16 +120,21 @@ export interface Role {
   /** e.g. `implementer`. */
   name: string;
   description: string;
-  /** Names of the skills its agents start with, in order. */
+  /** Names of the skills its agents start with, in order: the role's own `roles/<name>` first. */
   skills: string[];
   /** Higher runs first when the queue has more ready work than room. */
   priority: number;
   capability: Capability;
-  /** The brief an agent of this role is started with, before its own. */
+  /** The first message an agent of this role is started with unless it is given its own; empty for none. */
   brief: string;
+  /** What happens to an agent's session when its task is done: it stops, or is kept for more. The roles module always sets it. */
+  whenDone?: "stop" | "keep";
+  /** What the agent is told first: the body of the role's `SKILL.md`. The roles module always sets it. */
+  instructions?: string;
 }
 
 export interface Roles {
+  /** Every valid role, highest priority first, then by name; read fresh at each call. */
   list(): Promise<Role[]>;
   get(name: string): Promise<Role | undefined>;
 }
