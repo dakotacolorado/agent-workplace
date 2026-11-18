@@ -34,9 +34,9 @@ type TaskPlus = Task & { metadata?: Record<string, unknown>; blockedBy?: string[
 /** The first message of an agent started on `task`. */
 export function briefFor(task: Task): string {
   const lines = [
-    `Work on waypoint task ${task.shortId}: ${task.title}`,
+    `Work on task ${task.shortId}: ${task.title}`,
     "",
-    `Read it in full first: GetTask ${task.id} on the waypoint MCP server, or \`curl -H "Authorization: Bearer $WAYPOINT_TOKEN" "$WAYPOINT_URL/tasks/${task.id}"\`, with its comments (\`/tasks/${task.id}/comments\`).`,
+    `Read it in full first: \`get_task\` ${task.id} on the agent-workplace MCP server, or \`curl -H "Authorization: Bearer $AGENT_WORKPLACE_TOKEN" "$AGENT_WORKPLACE_URL/api/tasks/${task.id}"\`, with its comments (\`list_comments\`, or \`/api/tasks/${task.id}/comments\`).`,
   ];
   if (task.criteria.length) {
     lines.push("", "It is done when:");
@@ -44,7 +44,7 @@ export function briefFor(task: Task): string {
   }
   lines.push(
     "",
-    "Move it to `in_progress` as you start. Mark each criterion met once you have seen it hold yourself. When your change is submitted, move the task to `review` and say so with your status; the person closes it.",
+    "Move it to `in_progress` as you start. Mark each criterion met once you have seen it hold yourself. When your change is submitted, move the task to `review` and say so in your status. Your role says what follows.",
   );
   return lines.join("\n");
 }
