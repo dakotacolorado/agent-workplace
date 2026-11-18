@@ -238,6 +238,8 @@ async function agentPage(into: HTMLElement, id: string, api: Api): Promise<void>
     info.replaceChildren(...[agent.name, agent.role].filter((x): x is string => !!x).map((t) => make(doc, "span", "", t)));
     if (agent.task) info.append(taskLink(doc, agent.task));
     info.append(make(doc, "span", "", money(agent.costUsd)));
+    stop.hidden = !agent.live;
+    close.textContent = agent.task ? "Close agent and task" : "Close agent";
   };
   show(agent);
 

@@ -2,7 +2,11 @@
 .bar h1 { margin: 0.5rem 0; font-size: 1.4rem; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 button { font: inherit; padding: 0.45rem 0.9rem; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; min-height: 2.25rem; }
 button:disabled { opacity: 0.5; }
-button.danger { border-color: #c0392b; color: #c0392b; }
+:root { --danger: #c0392b; }
+@media (prefers-color-scheme: dark) {
+  :root { --danger: #ff8a7a; }
+}
+button.danger { background: var(--bg); border-color: var(--danger); color: var(--danger); }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 0.75rem; margin: 1rem 0; }
 .card { display: block; padding: 0.75rem 0.9rem; border: 1px solid var(--line); border-radius: 8px; color: inherit; text-decoration: none; min-width: 0; }
 .card.waiting { border-color: var(--accent); }
