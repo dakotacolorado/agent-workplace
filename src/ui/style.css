@@ -71,6 +71,7 @@ table.list { width: 100%; border-collapse: collapse; }
 table.list th { text-align: left; font-size: 0.8rem; color: var(--muted); font-weight: 500; }
 table.list th, table.list td { padding: 0.5rem 0.5rem 0.5rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 td.wide { width: 100%; }
+.nowrap { white-space: nowrap; }
 .tag { display: inline-block; font-size: 0.75rem; padding: 0.05rem 0.45rem; border: 1px solid var(--line); border-radius: 999px; margin-right: 0.3rem; white-space: nowrap; }
 .tag.waiting, .tag.held { border-color: #d98e04; color: #b87400; }
 .tag.soft { color: var(--accent); }

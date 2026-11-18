@@ -96,7 +96,7 @@ function table(skills: Summary[]): HTMLElement {
   return h(
     "table",
     { class: "list" },
-    h("thead", null, h("tr", null, ...["Skill", "Kind", "Version", "Waiting"].map((t) => h("th", null, t)))),
+    h("thead", null, h("tr", null, ...["Skill", "Kind", "Version", "Waiting"].map((t) => h("th", { class: "nowrap" }, t)))),
     h(
       "tbody",
       null,
@@ -106,9 +106,9 @@ function table(skills: Summary[]): HTMLElement {
           "tr",
           null,
           h("td", { class: "wide" }, ns && h("span", { class: "muted" }, `${ns}/`), h("a", { href: skillHref(s.name) }, rest.join("/")), h("div", { class: "muted small" }, s.description)),
-          h("td", null, h("span", { class: `tag ${s.kind}` }, s.kind), s.pending && h("span", { class: "tag held" }, "revision held")),
-          h("td", null, `v${s.version}`),
-          h("td", null, s.waiting ? h("span", { class: "tag waiting" }, `${s.waiting} waiting`) : h("span", { class: "muted" }, "0")),
+          h("td", { class: "nowrap" }, h("span", { class: `tag ${s.kind}` }, s.kind), s.pending && h("span", { class: "tag held" }, "revision held")),
+          h("td", { class: "nowrap" }, `v${s.version}`),
+          h("td", { class: "nowrap" }, s.waiting ? h("span", { class: "tag waiting" }, `${s.waiting} waiting`) : h("span", { class: "muted" }, "0")),
         );
       }),
     ),
