@@ -1,4 +1,5 @@
 import type { Api, Page } from "../../ui/page.ts";
+import { renderMarkdown } from "../../agents/ui/markdown.ts";
 import { changed, diffLines, type DiffLine } from "./diff.ts";
 import { failure, h, skillApi, skillHref, when } from "./dom.ts";
 
@@ -122,41 +123,7 @@ function renderDiff(d: DiffLine[]): HTMLElement {
 /** A SKILL.md as headings, lists, code and paragraphs, built from text only. */
 export function markdown(text: string): HTMLElement {
   const out = h("div", { class: "md" });
-  const body = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
-  let para: string[] = [];
-  let list: HTMLElement | null = null;
-  const flush = () => {
-    if (para.length) out.append(h("p", null, para.join(" ")));
-    para = [];
-  };
-  const rows = body.split("\n");
-  for (let i = 0; i < rows.length; i++) {
-    const line = rows[i]!;
-    const fence = /^```/.exec(line);
-    if (fence) {
-      flush();
-      list = null;
-      const code: string[] = [];
-      while (++i < rows.length && !/^```/.test(rows[i]!)) code.push(rows[i]!);
-      out.append(h("pre", null, code.join("\n")));
-      continue;
-    }
-    const head = /^(#{1,6})\s+(.*)$/.exec(line);
-    const item = /^\s*(?:[-*]|\d+\.)\s+(.*)$/.exec(line);
-    if (head) {
-      flush();
-      list = null;
-      out.append(h(`h${Math.min(head[1]!.length + 1, 6)}` as "h2", null, head[2]));
-    } else if (item) {
-      flush();
-      if (!list) out.append((list = h("ul", null)));
-      list.append(h("li", null, item[1]));
-    } else if (line.trim() === "") {
-      flush();
-      list = null;
-    } else para.push(line.trim());
-  }
-  flush();
+  renderMarkdown(document, out, text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, ""));
   return out;
 }
 

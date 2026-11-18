@@ -28,7 +28,12 @@ export function renderMarkdown(doc: Document, into: HTMLElement, text: string): 
     const item = /^\s*([-*]|\d+\.)\s+/;
     if (item.test(line)) {
       const list = el(/^\s*\d/.test(line) ? "ol" : "ul", into);
-      while (i < lines.length && item.test(lines[i]!)) inline(doc, el("li", list), lines[i++]!.replace(item, ""));
+      while (i < lines.length && item.test(lines[i]!)) {
+        const parts = [lines[i++]!.replace(item, "")];
+        // Wrapped lines of an item belong to it.
+        while (i < lines.length && lines[i]!.trim() && !item.test(lines[i]!) && !/^\s*```/.test(lines[i]!) && !/^#{1,6}\s/.test(lines[i]!)) parts.push(lines[i++]!.trim());
+        inline(doc, el("li", list), parts.join("\n"));
+      }
       continue;
     }
     if (!line.trim()) {

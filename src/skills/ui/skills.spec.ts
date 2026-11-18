@@ -11,6 +11,7 @@ import { shell, TOKEN_KEY } from "../../ui/shell.ts";
 import { createSkills } from "../index.ts";
 import type { Case, Decision, Judge } from "../judge.ts";
 import { diffLines } from "./diff.ts";
+import { markdown } from "./skills.ts";
 
 // The app reads files by URL, which the happy-dom environment breaks: keep node and give the page its own window.
 const win = new Window({ url: "http://localhost/" });
@@ -75,6 +76,26 @@ describe("diffLines", () => {
       { kind: "add", text: "x" },
       { kind: "same", text: "c" },
     ]);
+  });
+});
+
+describe("markdown", () => {
+  it("keeps a wrapped list item in one li and renders bold and code", () => {
+    const el = markdown("---\nname: x\n---\n\n- Read the code: clone the repos and find\n  what each task would change, **now** with `npm`.\n- Second\n");
+    const lis = el.querySelectorAll("li");
+    expect(lis.length).toBe(2);
+    expect(lis[0]!.textContent).toContain("clone the repos and find");
+    expect(lis[0]!.textContent).toContain("what each task would change");
+    expect(lis[0]!.querySelector("strong")?.textContent).toBe("now");
+    expect(lis[0]!.querySelector("code")?.textContent).toBe("npm");
+    expect(el.textContent).not.toContain("**");
+    expect(el.textContent).not.toContain("`");
+    expect(el.querySelectorAll("p").length).toBe(0);
+  });
+  it("never takes text as HTML", () => {
+    const el = markdown("<script>x</script> **b**");
+    expect(el.querySelector("script")).toBeNull();
+    expect(el.textContent).toContain("<script>");
   });
 });
 
