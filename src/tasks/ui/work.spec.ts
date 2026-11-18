@@ -63,6 +63,51 @@ describe("the Work page", () => {
     expect(el.querySelectorAll("article").length).toBe(1);
   });
 
+  it("with no open tasks at all, hides the filters and says to start a planner on Workers", async () => {
+    const { api, state } = fake();
+    state.tasks.length = 0;
+    state.entries.length = 0;
+    const el = main();
+    await pages[0]!.render(el, {}, api);
+    expect((el.querySelector(".filters") as HTMLElement).hidden).toBe(true);
+    expect(el.textContent).toContain("No tasks yet. Go to Workers, start a planner");
+    expect(el.querySelector('a[href="/workers"]')?.textContent).toBe("Workers");
+    expect(el.textContent).not.toContain("No open tasks match.");
+  });
+
+  it("with only closed tasks, treats the app as having none open", async () => {
+    const { api, state } = fake();
+    for (const t of state.tasks) t.status = "done";
+    const el = main();
+    await pages[0]!.render(el, {}, api);
+    expect((el.querySelector(".filters") as HTMLElement).hidden).toBe(true);
+    expect(el.textContent).toContain("No tasks yet.");
+  });
+
+  it("keeps the filters and says 'No open tasks match.' when a filter hides every task", async () => {
+    const { api } = fake();
+    const el = main();
+    await pages[0]!.render(el, {}, api);
+    expect((el.querySelector(".filters") as HTMLElement).hidden).toBe(false);
+    const status = el.querySelector("select[aria-label=Status]") as HTMLSelectElement;
+    status.value = "review";
+    status.dispatchEvent(new Event("change"));
+    expect(el.querySelectorAll("article").length).toBe(0);
+    expect(el.textContent).toContain("No open tasks match.");
+    expect(el.textContent).not.toContain("No tasks yet.");
+  });
+
+  it("explains Start and Queue in a hint and in each button's title", async () => {
+    const { api } = fake();
+    const el = main();
+    await pages[0]!.render(el, {}, api);
+    expect(el.querySelector(".hint")?.textContent).toContain("Start runs an agent on a task now");
+    expect(el.querySelector(".hint")?.textContent).toContain("Queue starts one when the task is ready and there is room");
+    expect(button(card("a"), "Start")?.title).toBe("Start an agent on it now");
+    expect(button(card("a"), "Queue")?.title).toBe("Start an agent when it is ready and there is room");
+    expect(button(card("b"), "Dequeue")?.title).toBe("Take it out of the queue");
+  });
+
   it("starts in place, taking a queued task out of the queue first", async () => {
     const { api, calls, state } = fake();
     state.tasks[1]!.blockedBy = [];
