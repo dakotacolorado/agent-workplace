@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp, type App } from "../app.ts";
 import type { Module } from "../module.ts";
+import { createRoles } from "../roles/index.ts";
 import { modules } from "../modules.ts";
 import { createSkills } from "./index.ts";
 import { ClaudeJudge, decisionJsonSchema, render, type Case, type Decision, type Judge } from "./judge.ts";
@@ -37,7 +38,8 @@ const declineAll = (c: Case): Decision =>
 
 let dirs: string[] = [];
 let apps: App[] = [];
-const withSkills = (skills: Module) => modules.map((m) => (m.name === "skills" ? skills : m));
+// Without the default roles, so the library holds only what these tests make.
+const withSkills = (skills: Module) => modules.map((m) => (m.name === "skills" ? skills : m.name === "roles" ? createRoles({ defaults: [] }) : m));
 const start = (judge: Judge | null, dir = mkdtempSync(join(tmpdir(), "awp-skills-")), extra: Module[] = []) => {
   dirs.push(dir);
   const app = createApp({ dir, modules: [...withSkills(createSkills({ judge, log: () => {} })), ...extra] });

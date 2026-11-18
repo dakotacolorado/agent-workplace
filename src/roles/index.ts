@@ -1,7 +1,8 @@
 import { createRoute, z, type OpenAPIHono } from "@hono/zod-openapi";
 import type { Context as HonoContext } from "hono";
-import type { Caller, Role, Roles, SkillFile } from "../contracts.ts";
+import type { Caller, Role, Roles, SkillFile, StarterSkill } from "../contracts.ts";
 import { tool, type Context, type Env, type Module } from "../module.ts";
+import { DEFAULT_SKILLS } from "./defaults/index.ts";
 import { PREFIX, ROLE_FILE, RoleFields, RoleRefusal, RoleSettingsSchema, SKILL_FILE, byPriority, checkRoleName, readRole, skillMd } from "./domain.ts";
 
 export const INSTRUCTIONS = `A role says what kind of agent to start: the skills it reads, its model, its first message and its priority. list_roles shows every role, highest priority first; get_role one role with its text. Only the person creates or edits roles (create_role, update_role); a role is the skill roles/<name>, so feedback on it revises it like any skill.`;
@@ -13,18 +14,31 @@ const err = z.object({ error: z.string() });
 const errors = { 400: json(err, "Refused, with how to fix it."), 403: json(err, "Only the person may do this."), 404: json(err, "No such role.") };
 
 /** Roles agents work in. Each is the skill `roles/<name>`; every call reads the skills afresh, so an edit applies to the next session. */
-export function createRoles(opts: { log?: (line: string) => void } = {}): Module {
+export function createRoles(opts: { log?: (line: string) => void; defaults?: StarterSkill[] } = {}): Module {
   const log = opts.log ?? ((line) => console.log(`roles: ${line}`));
+  const defaults = opts.defaults ?? DEFAULT_SKILLS;
   return {
     name: "roles",
     migrations: [],
     create(ctx: Context) {
       const skills = () => ctx.services.skills;
+      // The default roles and their shared skills, added once to a fresh library (one the person deleted stays deleted).
+      // Seeded as soon as every module is created; every read waits for it.
+      let seeding: Promise<void> | undefined;
+      const seeded = () =>
+        (seeding ??= skills()
+          .seed(defaults)
+          .then((added) => {
+            if (added.length) log(`seeded ${added.join(", ")}`);
+          })
+          .catch((e) => log(`seeding the default roles failed: ${(e as Error).message}`)));
+      queueMicrotask(() => void seeded());
       const person = (caller: Caller) => {
         if (caller.kind !== "person") throw new RoleRefusal("only the person creates or edits roles", 403);
       };
 
       const read = async (name: string) => {
+        await seeded();
         const skill = await skills().get(PREFIX + name);
         if (!skill) return undefined;
         const r = readRole(skill);
@@ -35,6 +49,7 @@ export function createRoles(opts: { log?: (line: string) => void } = {}): Module
         return r;
       };
       const readAll = async () => {
+        await seeded();
         const out: Role[] = [];
         for (const skill of await skills().list()) {
           if (!skill.name.startsWith(PREFIX)) continue;
@@ -59,6 +74,7 @@ export function createRoles(opts: { log?: (line: string) => void } = {}): Module
       const create = async (a: { name: string; body: string } & z.infer<typeof Settings>, caller: Caller) => {
         person(caller);
         checkRoleName(a.name);
+        await seeded();
         if (await skills().get(PREFIX + a.name)) throw new RoleRefusal(`a role named ${a.name} already exists; update_role changes it`, 400);
         const { name, body, ...rest } = a;
         const settings = RoleSettingsSchema.parse(rest);

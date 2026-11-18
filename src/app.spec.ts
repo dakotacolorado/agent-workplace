@@ -131,6 +131,6 @@ describe("the app", () => {
     expect(modules.map((m) => m.name)).toEqual(["tasks", "skills", "roles", "agents", "queue"]);
     const app = start(undefined, modules);
     expect(Object.keys(app.ctx.services).sort()).toEqual(["agents", "roles", "skills", "tasks"]);
-    expect(await app.ctx.services.roles.list()).toEqual([]);
+    expect((await app.ctx.services.roles.list()).map((r) => r.name)).toEqual(["planner", "project-manager", "implementer"]);
   });
 });
