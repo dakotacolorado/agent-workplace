@@ -1,43 +1,51 @@
 # agent-workplace
 
-A team of Claude Code agents on your machine: a planner, a project manager and
-implementers take your request to merged pull requests, and the skills they
-work by improve from their own feedback.
+Tell a team of Claude Code agents on your computer what you want built: they plan it into tasks, write the code and merge the pull requests in your GitHub repos, and you watch and steer them from a web page.
 
 ![Work: open tasks, their queue place, and Start and Queue buttons](docs/images/work-desktop.png)
 
-![A worker's conversation: its plan, tool calls and your messages](docs/images/agent-desktop.png)
-
-![A skill's history: each revision with its diff and the judge's reason](docs/images/skill-history.png)
-
-## Run it
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/dakotacolorado/agent-workplace/main/scripts/setup.sh | bash
-```
-
-Or from a clone:
-
-```sh
-git clone https://github.com/dakotacolorado/agent-workplace
-cd agent-workplace
-scripts/setup.sh
-```
-
-The script checks for Node 24 or later, `gh` and Claude Code, and offers to
-install what is missing (Homebrew for Node and `gh`, npm for Claude Code). It
-checks that you are signed in to both and, if not, prints the one command to
-run and stops: `gh auth login`, or `claude` then `/login`. Then it starts the
-app and prints a link that opens the page signed in. Run it again any time: it
-installs nothing twice and reuses an app that is already running.
-
-Open the link, go to **Workers**, start a planner and tell it what you want.
+## Before you start
 
 You need:
 
 - macOS or Linux, with Homebrew on a Mac
 - a Claude subscription or API key for Claude Code
 - a GitHub account for `gh`
+
+**Agents run as you.** Each one is a Claude Code session using your Claude
+login and your `gh` login. It reads and writes files, runs commands and can
+push, open and merge pull requests in every repository your GitHub account
+can. Its Claude usage counts against your subscription or key. Nothing is
+sandboxed and tool calls are not asked about. Only give it work you would give
+a colleague with your access.
+
+## Get started
+
+1. Run the one-line setup. It installs what is missing after asking, checks
+   you are signed in to Claude Code and `gh`, starts the app and prints a link.
+
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/dakotacolorado/agent-workplace/main/scripts/setup.sh | bash
+   ```
+
+   Or from a clone:
+
+   ```sh
+   git clone https://github.com/dakotacolorado/agent-workplace
+   cd agent-workplace
+   scripts/setup.sh
+   ```
+
+2. Open the printed link. It opens the page signed in. Running the script
+   again prints the link again.
+3. Go to **Workers** and start a planner. Write what you want built and name
+   the GitHub repository to work in as `owner/name`, for example: "In
+   octocat/hello-world, add a dark mode toggle to the settings page."
+4. The planner turns your request into tasks, which appear on **Work**. A
+   project manager queues them, and implementers pick them up, write the code
+   and open and merge pull requests in that repository. Watch the tasks on
+   **Work** and each agent's conversation on **Workers**, and message or stop
+   an agent from there.
 
 ## Configure it
 
@@ -57,8 +65,12 @@ Set these in the environment before starting the app.
 - **Work** lists tasks with their criteria and dependencies. Start a task to
   give it to an agent now, or queue it: the queue starts an agent on each task
   as it becomes ready, up to the agent limit.
+
 - **Workers** shows each agent's conversation live. You can message, stop or
   close an agent.
+
+  ![A worker's conversation: its plan, tool calls and your messages](docs/images/agent-desktop.png)
+
 - **Roles** say what an agent is for. A fresh app has a planner (turns your
   request into tasks), a project manager (queues them and reviews the results)
   and an implementer (does one task and merges its PR).
@@ -66,12 +78,7 @@ Set these in the environment before starting the app.
   was wrong or missing; a judge reads the reports and writes a new version
   you can see, diff and revert.
 
-**Agents run as you.** Each one is a Claude Code session in its own folder
-under the data folder, using your Claude login and your `gh` login. It reads
-and writes files, runs commands and can push, open and merge pull requests in
-every repository your GitHub account can, and its Claude usage counts against
-your subscription or key. Nothing is sandboxed and tool calls are not asked
-about. Only give it work you would give a colleague with your access.
+  ![A skill's history: each revision with its diff and the judge's reason](docs/images/skill-history.png)
 
 ## Use it
 
