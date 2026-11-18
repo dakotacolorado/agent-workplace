@@ -127,6 +127,20 @@ describe("Workers page", () => {
     ]);
   });
 
+  it("shows Stop only while the session is live", async () => {
+    const idle = await render("/workers/:id", { id: "a" }, fakeApi([agent("a", "done")]));
+    expect((idle.querySelector(".actions button") as HTMLButtonElement).hidden).toBe(true);
+    const live = await render("/workers/:id", { id: "a" }, fakeApi([agent("a", "working", { live: true })]));
+    expect((live.querySelector(".actions button") as HTMLButtonElement).hidden).toBe(false);
+  });
+
+  it("labels the close button for a task only when the agent has one", async () => {
+    const planner = await render("/workers/:id", { id: "a" }, fakeApi([agent("a", "done")]));
+    expect((planner.querySelectorAll(".actions button")[1] as HTMLButtonElement).textContent).toBe("Close agent");
+    const worker = await render("/workers/:id", { id: "a" }, fakeApi([agent("a", "done", { task: "t1" })]));
+    expect((worker.querySelectorAll(".actions button")[1] as HTMLButtonElement).textContent).toBe("Close agent and task");
+  });
+
   it("changes nothing and shows why when the task refuses to close", async () => {
     const calls: [string, string, unknown][] = [];
     const into = await render("/workers/:id", { id: "a" }, fakeApi([agent("a", "waiting", { task: "t1" })], calls, true));
