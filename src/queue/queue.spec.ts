@@ -74,7 +74,10 @@ describe("queue", () => {
     await api("POST", "/api/queue", { taskId: a.id });
     expect(fake.made.map((m) => m.name)).toEqual([`impl-${a.shortId}`]);
     expect(fake.made[0]).toMatchObject({ role: "implementer", task: a.id });
-    expect(fake.made[0]!.brief).toContain(`Work on waypoint task ${a.shortId}: first`);
+    expect(fake.made[0]!.brief).toContain(`Work on task ${a.shortId}: first`);
+    expect(fake.made[0]!.brief).toContain("agent-workplace MCP server");
+    expect(fake.made[0]!.brief).toContain("$AGENT_WORKPLACE_URL/api/tasks/");
+    expect(fake.made[0]!.brief).not.toMatch(/waypoint|WAYPOINT|the person closes/i);
     // Still running: the second waits.
     await api("POST", "/api/queue/tick");
     expect(fake.made).toHaveLength(1);
