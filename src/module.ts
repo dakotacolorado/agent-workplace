@@ -49,6 +49,8 @@ export interface Instance {
   /** Adds its routes to `api`, which is mounted at `/api/<module>/` behind the auth middleware. */
   routes?(api: OpenAPIHono<Env>): void;
   tools?: Tool[];
+  /** A few lines for /mcp's instructions: how an agent should use this module's tools. */
+  instructions?: string;
   close?(): void | Promise<void>;
 }
 

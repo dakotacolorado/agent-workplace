@@ -81,23 +81,34 @@ export interface Skill {
 
 export interface Feedback {
   skill: string;
-  /** The skill's exact text the report is about. */
+  /** The skill's exact text the report is about; needed on an existing hard skill. */
   quote?: string;
-  /** What the agent saw: a command and its output, a file as it is now. */
-  evidence: string;
-  /** What the agent did instead, or what it changed. */
+  /** What the agent saw: a command and its output, a file as it is now. Needed with a quote on a hard skill. */
+  evidence?: string;
+  /** What the agent did instead, or what it changed. Needed with a quote on a hard skill. */
   whatChanged?: string;
+  /** Anything else: for a skill not yet made, what it is for; on a soft skill, the observation. */
+  text?: string;
   /** Files suggested for the next version. */
   files?: SkillFile[];
+}
+
+/** A skill a module adds to the library the first time the app starts with it. */
+export interface StarterSkill {
+  name: string;
+  files: SkillFile[];
 }
 
 export interface Skills {
   /** A skill at its latest version, or at `version`; undefined if none. */
   get(name: string, version?: number): Promise<Skill | undefined>;
   list(): Promise<Skill[]>;
-  /** Writes one file (creating the skill if new) as a new version, returned. */
+  /** Writes one file (creating the skill if new) as a new version, returned. Only the person writes skills; an agent sends feedback. */
   writeFile(name: string, file: SkillFile, by: Caller, note?: string): Promise<Skill>;
+  /** Queues a report for the judge; refused (throws, with how to fix it) when it is not one the judge can decide. */
   submitFeedback(feedback: Feedback, by: Caller): Promise<{ id: string }>;
+  /** Adds each skill the library has never held (one the person deleted stays deleted); returns the names added. */
+  seed(starters: StarterSkill[]): Promise<string[]>;
 }
 
 // ---------------------------------------------------------------- Roles

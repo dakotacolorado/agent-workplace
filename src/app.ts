@@ -83,6 +83,7 @@ export function createApp(options: AppOptions): App {
     if (inst.service) (services as unknown as Record<string, unknown>)[m.name] = inst.service;
   }
   const tools: Tool[] = instances.flatMap(([, inst]) => inst.tools ?? []);
+  const instructions = instances.flatMap(([, inst]) => (inst.instructions ? [inst.instructions] : []));
   const seen = new Set<string>();
   for (const t of tools) {
     if (seen.has(t.name)) throw new Error(`two tools are named ${t.name}`);
@@ -131,7 +132,7 @@ export function createApp(options: AppOptions): App {
 
   app.all("/mcp", async (c) => {
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-    await mcpServer(tools, VERSION, c.get("caller")).connect(transport);
+    await mcpServer(tools, VERSION, c.get("caller"), instructions).connect(transport);
     return transport.handleRequest(c.req.raw);
   });
 
