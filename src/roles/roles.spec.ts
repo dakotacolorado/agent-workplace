@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createApp, type App } from "../app.ts";
 import { modules } from "../modules.ts";
 import { createSkills } from "../skills/index.ts";
+import { DEFAULT_SKILLS } from "./defaults/index.ts";
+import { readRole } from "./domain.ts";
 import { createRoles } from "./index.ts";
 
 let dirs: string[] = [];
@@ -18,11 +20,11 @@ afterEach(async () => {
   dirs = [];
 });
 
-function start() {
-  const dir = mkdtempSync(join(tmpdir(), "awr-"));
-  dirs.push(dir);
+function start(opts: { defaults?: boolean; dir?: string } = {}) {
+  const dir = opts.dir ?? mkdtempSync(join(tmpdir(), "awr-"));
+  if (!opts.dir) dirs.push(dir);
   const logs: string[] = [];
-  const mods = modules.map((m) => (m.name === "roles" ? createRoles({ log: (l) => logs.push(l) }) : m.name === "skills" ? createSkills({ judge: null, log: () => {} }) : m));
+  const mods = modules.map((m) => (m.name === "roles" ? createRoles({ log: (l) => logs.push(l), ...(opts.defaults ? {} : { defaults: [] }) }) : m.name === "skills" ? createSkills({ judge: null, log: () => {} }) : m));
   const app = createApp({ dir, modules: mods });
   apps.push(app);
   return { app, logs };
@@ -116,5 +118,63 @@ describe("roles", () => {
     expect((await call("GET", "/nope")).status).toBe(404);
     expect((await call("POST", "/", { name: "x", summary: "S.", body: "T." }, app.ctx.tokens.issue("a1"))).status).toBe(403);
     expect((await call("POST", "/", { name: "x", summary: "S.", body: "T.", priority: 200 })).status).toBe(400);
+  });
+
+  describe("the defaults", () => {
+    const FORBIDDEN = [/release-routines/i, /jobber/i, /tailnet/i, /tailscale/i, /ts\.net/i, /lenovo/i, /keyring/i, /peek/i, /nudge/i, /blogger/i, /dakota/i, /waypoint/i, /hopper/i, /honed/i, /agency/i, /\bbeta\b/i, /\bprod\b/i, /\bhosts?\b/i, /\bstages?\b/i, /discord/i];
+
+    it("gives a fresh app exactly the planner, project-manager and implementer roles, each valid", async () => {
+      const { app, logs } = start({ defaults: true });
+      const c = await client(app, app.adminToken);
+      const listed = JSON.parse((await c.call("list_roles", {})).out).roles as { name: string; skills: string[]; priority: number; capability: number }[];
+      expect(listed.map((r) => r.name)).toEqual(["planner", "project-manager", "implementer"]);
+      expect(listed.map((r) => [r.priority, r.capability])).toEqual([[40, 3], [35, 2], [10, 2]]);
+      for (const r of listed) {
+        const skill = await text(app, `roles/${r.name}`);
+        const read = readRole(skill);
+        expect("invalid" in read ? read.invalid : "valid").toBe("valid");
+        for (const s of r.skills) expect(await app.ctx.services.skills.get(s), s).toBeDefined();
+      }
+      expect(listed.find((r) => r.name === "planner")!.skills).toEqual(["roles/planner", "workplace/rules", "workplace/tasks-to-merge", "workplace/readme-writing"]);
+      expect(listed.find((r) => r.name === "project-manager")!.skills).toEqual(["roles/project-manager", "workplace/rules", "workplace/tasks-to-merge"]);
+      expect(logs.join("\n")).not.toMatch(/left out/);
+      await c.close();
+    });
+
+    it("seeds once: a restart adds nothing, and a default the person deleted stays deleted", async () => {
+      const dir = mkdtempSync(join(tmpdir(), "awr-"));
+      dirs.push(dir);
+      const first = start({ defaults: true, dir });
+      expect((await first.app.ctx.services.roles.list()).map((r) => r.name)).toContain("planner");
+      const del = await first.app.fetch(new Request(`http://localhost/api/skills/${encodeURIComponent("roles/planner")}`, { method: "DELETE", headers: { Authorization: `Bearer ${first.app.adminToken}` } }));
+      expect(del.status).toBe(200);
+      await first.app.close();
+      apps = apps.filter((a) => a !== first.app);
+      const second = start({ defaults: true, dir });
+      expect((await second.app.ctx.services.roles.list()).map((r) => r.name)).toEqual(["project-manager", "implementer"]);
+      expect((await text(second.app, "workplace/rules")).version).toBe(1);
+    });
+
+    it("names no machine, stage, release job, outside service or person", () => {
+      expect(DEFAULT_SKILLS.map((s) => s.name).sort()).toEqual(["roles/implementer", "roles/planner", "roles/project-manager", "workplace/readme-writing", "workplace/rules", "workplace/tasks-to-merge"]);
+      for (const s of DEFAULT_SKILLS)
+        for (const f of s.files) for (const word of FORBIDDEN) expect(word.test(f.content), `${s.name}/${f.path} matches ${word}`).toBe(false);
+    });
+
+    it("says how each role works: the implementer merges its own PR, the planner starts a PM, the PM queues and reports", () => {
+      const body = (name: string) => DEFAULT_SKILLS.find((s) => s.name === name)!.files.find((f) => f.path === "SKILL.md")!.content;
+      const impl = body("roles/implementer");
+      expect(impl).toMatch(/repo's own checks/);
+      expect(impl).toMatch(/merge it yourself/);
+      expect(impl).toMatch(/once every criterion is met, move the task to `done`/);
+      const planner = body("roles/planner");
+      for (const s of ["criteria", "verification", "dependsOn", "difficulty", "manager: <that name>", "create_agent", 'role:\n"project-manager"']) expect(planner).toContain(s);
+      const pm = body("roles/project-manager");
+      expect(pm).toContain("queue_task");
+      expect(pm).toMatch(/One report at the end/);
+      expect(body("workplace/rules")).toMatch(/set_status/);
+      expect(body("workplace/rules")).toMatch(/set_title/);
+      expect(body("workplace/rules")).toMatch(/submit_feedback/);
+    });
   });
 });
